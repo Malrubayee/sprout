@@ -7,12 +7,7 @@ import TeacherDashboard from "../components/TeacherDashboard";
 import SproutRoom from "../components/SproutRoom";
 
 export default function SproutApp() {
-  const { user, sproutUser, loading, logout } = useAuth() as {
-    user: any;
-    sproutUser: any;
-    loading: boolean;
-    logout: any;
-  };
+  const { user, sproutUser, loading, logout }: any = useAuth();
   const [appMode, setAppMode] = useState<"landing" | "teacher-dashboard" | "room">("landing");
   const [selectedRoom, setSelectedRoom] = useState("");
 
