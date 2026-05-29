@@ -1,5 +1,6 @@
 "use client";
 
+import { auth } from "../lib/firebase";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { db } from "../lib/firebase";
 import {
@@ -28,6 +29,9 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
 
   const myUid = currentUser?.uid;
   const myName = currentUser?.name || currentUser?.displayName || "Student";
+
+  console.log("USER UID:", auth.currentUser?.uid);
+  console.log("ROOM USER:", sproutUser);
 
   // Listen for incoming calls
   useEffect(() => {
