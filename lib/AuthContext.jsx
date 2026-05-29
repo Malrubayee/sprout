@@ -16,7 +16,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);       // Firebase user object
-  const [sproutUser, setSproutUser] = useState<any>(null); // { role, name, roomCode, teacherId }
+  const [sproutUser, setSproutUser] = useState(null); // { role, name, roomCode, teacherId }
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
