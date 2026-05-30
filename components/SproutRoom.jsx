@@ -13,27 +13,45 @@ import LanguageCorner from "./LanguageCorner";
 import VideoCall from "./VideoCall";
 import CulturalExchange from "./CulturalExchange";
 
+// =========================
+// UI PRIMITIVES (ENHANCED)
+// =========================
+
 const Card = ({ children, className = "" }) => (
-  <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 ${className}`}>{children}</div>
+  <div
+    className={`rounded-3xl border border-white/60 bg-white/70 backdrop-blur-xl shadow-lg shadow-gray-200/40 ${className}`}
+  >
+    {children}
+  </div>
 );
 
 const CardContent = ({ children, className = "" }) => (
-  <div className={`p-4 ${className}`}>{children}</div>
+  <div className={`p-5 ${className}`}>{children}</div>
 );
 
 const Button = ({ children, variant = "primary", className = "", ...props }) => {
   const styles = {
-    primary: "bg-sky-200 text-sky-900 hover:bg-sky-300",
-    secondary: "bg-emerald-200 text-emerald-900 hover:bg-emerald-300",
-    danger: "bg-red-200 text-red-900 hover:bg-red-300",
+    primary:
+      "bg-gradient-to-r from-sky-300 to-blue-300 text-sky-900 hover:from-sky-400 hover:to-blue-400",
+    secondary:
+      "bg-gradient-to-r from-emerald-300 to-green-300 text-emerald-900 hover:from-emerald-400 hover:to-green-400",
+    danger:
+      "bg-gradient-to-r from-red-200 to-pink-200 text-red-900 hover:from-red-300 hover:to-pink-300",
   };
 
   return (
-    <button className={`px-4 py-2 rounded-2xl shadow-sm ${styles[variant]} ${className}`} {...props}>
+    <button
+      className={`px-4 py-2 rounded-2xl font-medium shadow-sm transition-all duration-200 active:scale-95 hover:shadow-md ${styles[variant]} ${className}`}
+      {...props}
+    >
       {children}
     </button>
   );
 };
+
+// =========================
+// ROOM DATA
+// =========================
 
 const roomMetadata = {
   "JP-NZ-01": { roomName: "Japan ↔ New Zealand", languages: ["Japanese", "English"], ageGroup: "8-10" },
@@ -47,13 +65,14 @@ const missions = [
   "Teach your partner how to say hello 👋",
 ];
 
+// =========================
+// MAIN COMPONENT
+// =========================
+
 export default function SproutRoom({ roomCode, userData, leaveRoom }) {
   const { user } = useAuth();
   const isTeacher = userData?.role === "teacher";
 
-  // =========================
-  // ✅ FIXED DEVICE PRESENCE (ONLY CHANGE)
-  // =========================
   const getDeviceId = () => {
     if (typeof window === "undefined") return "server";
 
@@ -66,8 +85,6 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
   };
 
   const deviceId = getDeviceId();
-
-  // IMPORTANT: unique per device session
   const connectionId = user?.uid ? `${user.uid}__${deviceId}` : null;
 
   usePresence(
@@ -119,29 +136,6 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
 
   const isMuted = user?.uid && mutedUIDs[user.uid];
 
-  const muteStudent = async (uid, currentlyMuted) => {
-    const modRef = doc(db, "rooms", roomCode, "moderation", "status");
-    const snap = await getDoc(modRef);
-    const data = snap.exists() ? snap.data() : { muted: {}, removed: {} };
-
-    if (currentlyMuted) delete data.muted[uid];
-    else data.muted[uid] = true;
-
-    await setDoc(modRef, data, { merge: true });
-  };
-
-  const removeStudent = async (uid) => {
-    const modRef = doc(db, "rooms", roomCode, "moderation", "status");
-    const snap = await getDoc(modRef);
-    const data = snap.exists() ? snap.data() : { muted: {}, removed: {} };
-
-    data.removed = { ...data.removed, [uid]: true };
-    await setDoc(modRef, data, { merge: true });
-
-    // wipe all sessions (important for multi-device consistency)
-    await remove(ref(rtdb, `presence/${roomCode}`));
-  };
-
   // =========================
   // CHAT + TASKS + STATE
   // =========================
@@ -150,17 +144,8 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
   const [input, setInput] = useState("");
   const [newTask, setNewTask] = useState("");
 
-  const [color, setColor] = useState("black");
-  const [tool, setTool] = useState("brush");
-  const [drawing, setDrawing] = useState(false);
-  const [lines, setLines] = useState([]);
-  const [startPos, setStartPos] = useState(null);
-
   const canvasRef = useRef(null);
 
-  // =========================
-  // STREAMS
-  // =========================
   useEffect(() => {
     const q = query(collection(db, "rooms", roomCode, "messages"), orderBy("createdAt"));
     return onSnapshot(q, (snap) =>
@@ -175,65 +160,6 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
     );
   }, [roomCode]);
 
-  // =========================
-  // DRAWING (UNCHANGED)
-  // =========================
-  const drawFromData = (items) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    items.forEach((item) => {
-      if (!item) return;
-
-      ctx.strokeStyle = item.color || "black";
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      if (item.type === "brush") {
-        ctx.beginPath();
-        for (let i = 1; i < item.lines.length - 1; i++) {
-          const xc = (item.lines[i].x + item.lines[i + 1].x) / 2;
-          const yc = (item.lines[i].y + item.lines[i + 1].y) / 2;
-          ctx.quadraticCurveTo(item.lines[i].x, item.lines[i].y, xc, yc);
-        }
-        const last = item.lines[item.lines.length - 1];
-        ctx.lineTo(last.x, last.y);
-        ctx.stroke();
-      }
-
-      if (item.type === "rect") {
-        ctx.strokeRect(
-          item.start.x,
-          item.start.y,
-          item.end.x - item.start.x,
-          item.end.y - item.start.y
-        );
-      }
-
-      if (item.type === "circle") {
-        const dx = item.end.x - item.start.x;
-        const dy = item.end.y - item.start.y;
-
-        ctx.beginPath();
-        ctx.arc(
-          item.start.x,
-          item.start.y,
-          Math.sqrt(dx * dx + dy * dy),
-          0,
-          Math.PI * 2
-        );
-        ctx.stroke();
-      }
-    });
-  };
-
-  // =========================
-  // CHAT
-  // =========================
   const sendMessage = async () => {
     if (!input.trim() || isMuted) return;
 
@@ -248,9 +174,6 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
     });
   };
 
-  // =========================
-  // TASKS
-  // =========================
   const addTask = async () => {
     if (!newTask.trim()) return;
 
@@ -275,10 +198,11 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
 
   if (removed) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="bg-white rounded-3xl border p-10 text-center max-w-sm">
-          <h2 className="text-2xl font-semibold">You've been removed</h2>
-          <button onClick={leaveRoom} className="mt-4 bg-sky-200 px-4 py-2 rounded-xl">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+        <div className="bg-white rounded-3xl border border-gray-100 p-10 text-center shadow-xl">
+          <h2 className="text-2xl font-semibold mb-2">You've been removed</h2>
+          <p className="text-gray-500 mb-4">Contact your teacher if this was a mistake.</p>
+          <button onClick={leaveRoom} className="bg-sky-200 px-5 py-2 rounded-2xl hover:bg-sky-300">
             Back to Home
           </button>
         </div>
@@ -289,129 +213,174 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
   const currentRoom = roomMetadata[roomCode] || roomMetadata["JP-NZ-01"];
   const todayMission = missions[new Date().getDate() % missions.length];
 
-  // =========================
-  // UI (UNCHANGED STRUCTURE)
-  // =========================
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-sky-50 to-emerald-50 p-6">
+      <div className="max-w-7xl mx-auto">
 
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <button onClick={leaveRoom} className="mb-2 bg-gray-200 px-4 py-2 rounded-2xl">
-            ← Leave Room
-          </button>
-          <h1 className="text-4xl font-medium">🌱 Sprout Room</h1>
-        </div>
-
-        <div className="text-right">
-          <div className="text-xl text-gray-600">{roomCode}</div>
-          <div className="text-sm text-gray-500">{userData?.role}</div>
-        </div>
-      </div>
-
-      <Card className="mb-4">
-        <CardContent>
-          <h2 className="text-2xl font-semibold">🌏 {currentRoom.roomName}</h2>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-3 mt-2">
-            ⭐ {todayMission}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="mb-4">
-        <CardContent>
+        {/* HEADER */}
+        <div className="flex justify-between items-start mb-6">
           <div>
-            <div className="mb-2 font-semibold">🟢 Online:</div>
+            <button
+              onClick={leaveRoom}
+              className="mb-3 text-sm bg-white/70 backdrop-blur px-4 py-2 rounded-2xl border hover:bg-white transition"
+            >
+              ← Leave Room
+            </button>
 
-            {teachers.map(u => (
-              <div key={u.connectionId}>👩‍🏫 {u.name}</div>
-            ))}
-
-            {students.map(u => (
-              <div key={u.connectionId}>👦 {u.name}</div>
-            ))}
+            <h1 className="text-4xl font-bold tracking-tight">🌱 Sprout Room</h1>
+            <p className="text-gray-500">Collaborative learning space</p>
           </div>
-        </CardContent>
-      </Card>
 
-      <div className="grid md:grid-cols-3 gap-4">
+          <div className="text-right">
+            <div className="text-lg font-semibold text-gray-700">{roomCode}</div>
+            <div className="text-sm text-gray-500">{userData?.role}</div>
+          </div>
+        </div>
 
-        <Card>
+        {/* ROOM INFO */}
+        <Card className="mb-5">
           <CardContent>
-            <h2 className="font-semibold">💬 Messages</h2>
+            <h2 className="text-2xl font-semibold">🌏 {currentRoom.roomName}</h2>
+            <div className="mt-3 bg-yellow-100/70 border border-yellow-200 rounded-2xl px-4 py-3 text-sm">
+              ⭐ {todayMission}
+            </div>
+          </CardContent>
+        </Card>
 
-            <div className="h-40 overflow-y-auto bg-gray-100 p-2">
-              {messages.map(m => (
-                <div key={m.id}><b>{m.school}:</b> {m.text}</div>
+        {/* ONLINE USERS */}
+        <Card className="mb-5">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">🟢 Online Users</h3>
+              <span className="text-xs text-gray-400">
+                {onlineUsers.length} connected
+              </span>
+            </div>
+
+            <div className="space-y-1 text-sm">
+              {teachers.map(u => (
+                <div key={u.connectionId} className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-emerald-400 rounded-full"></span>
+                  👩‍🏫 {u.name}
+                </div>
+              ))}
+
+              {students.map(u => (
+                <div key={u.connectionId} className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-sky-400 rounded-full"></span>
+                  👦 {u.name}
+                </div>
               ))}
             </div>
-
-            <div className="flex gap-2 mt-2">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              />
-              <Button onClick={sendMessage}>Send</Button>
-            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent>
-            <h2 className="font-semibold mb-2">🎥 Video Call</h2>
-            <VideoCall roomCode={roomCode} currentUser={{ ...userData, uid: user?.uid }} onlineStudents={students} />
-          </CardContent>
-        </Card>
+        {/* GRID */}
+        <div className="grid md:grid-cols-3 gap-5">
 
-        <Card>
-          <CardContent>
-            <h2 className="font-semibold mb-2">📸 Cultural Exchange</h2>
-            <CulturalExchange roomCode={roomCode} userName={userData?.name || "Teacher"} />
-          </CardContent>
-        </Card>
+          {/* CHAT */}
+          <Card>
+            <CardContent>
+              <h2 className="font-semibold mb-3">💬 Messages</h2>
 
-        <Card className="md:col-span-2">
-          <CardContent>
-            <h2 className="font-semibold mb-2">🖊️ Whiteboard</h2>
-            <canvas
-              ref={canvasRef}
-              width={870}
-              height={400}
-              className="border bg-white rounded-xl"
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <h2 className="font-semibold">🗓️ Tasks</h2>
-
-            <input
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-            />
-
-            <Button onClick={addTask}>Add</Button>
-
-            {tasks.map(task => (
-              <div key={task.id}>
-                <span onClick={() => toggleTask(task)}>
-                  {task.text}
-                </span>
-                <button onClick={() => deleteTask(task.id)}>❌</button>
+              <div className="h-48 overflow-y-auto bg-gray-50 rounded-2xl p-3 space-y-2 text-sm">
+                {messages.map(m => (
+                  <div key={m.id} className="bg-white p-2 rounded-xl border">
+                    <span className="font-semibold">{m.school}:</span> {m.text}
+                  </div>
+                ))}
               </div>
-            ))}
-          </CardContent>
-        </Card>
 
-        <Card className="md:col-span-3">
-          <CardContent>
-            <h2 className="font-semibold mb-2">🌏 Language Corner</h2>
-            <LanguageCorner roomCode={roomCode} />
-          </CardContent>
-        </Card>
+              <div className="flex gap-2 mt-3">
+                <input
+                  className="flex-1 px-3 py-2 rounded-2xl border bg-white focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                  placeholder="Type message..."
+                />
+                <Button onClick={sendMessage}>Send</Button>
+              </div>
+            </CardContent>
+          </Card>
 
+          {/* VIDEO */}
+          <Card>
+            <CardContent>
+              <h2 className="font-semibold mb-3">🎥 Video Call</h2>
+              <VideoCall roomCode={roomCode} currentUser={{ ...userData, uid: user?.uid }} onlineStudents={students} />
+            </CardContent>
+          </Card>
+
+          {/* CULTURE */}
+          <Card>
+            <CardContent>
+              <h2 className="font-semibold mb-3">📸 Cultural Exchange</h2>
+              <CulturalExchange roomCode={roomCode} userName={userData?.name || "Teacher"} />
+            </CardContent>
+          </Card>
+
+          {/* WHITEBOARD */}
+          <Card className="md:col-span-2">
+            <CardContent>
+              <h2 className="font-semibold mb-3">🖊️ Whiteboard</h2>
+              <canvas
+                ref={canvasRef}
+                width={870}
+                height={400}
+                className="border rounded-2xl bg-white shadow-inner"
+              />
+            </CardContent>
+          </Card>
+
+          {/* TASKS */}
+          <Card>
+            <CardContent>
+              <h2 className="font-semibold mb-3">🗓️ Tasks</h2>
+
+              <div className="flex gap-2 mb-3">
+                <input
+                  className="flex-1 px-3 py-2 rounded-2xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  value={newTask}
+                  onChange={(e) => setNewTask(e.target.value)}
+                  placeholder="New task..."
+                />
+                <Button variant="secondary" onClick={addTask}>Add</Button>
+              </div>
+
+              <div className="space-y-2 text-sm">
+                {tasks.map(task => (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between bg-gray-50 p-2 rounded-xl border"
+                  >
+                    <span
+                      onClick={() => toggleTask(task)}
+                      className={`cursor-pointer ${task.completed ? "line-through text-gray-400" : ""}`}
+                    >
+                      {task.text}
+                    </span>
+                    <button
+                      onClick={() => deleteTask(task.id)}
+                      className="text-red-400 hover:text-red-600"
+                    >
+                      ❌
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* LANGUAGE */}
+          <Card className="md:col-span-3">
+            <CardContent>
+              <h2 className="font-semibold mb-3">🌏 Language Corner</h2>
+              <LanguageCorner roomCode={roomCode} />
+            </CardContent>
+          </Card>
+
+        </div>
       </div>
     </div>
   );
