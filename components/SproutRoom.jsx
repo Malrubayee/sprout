@@ -322,16 +322,53 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
 
           {/* WHITEBOARD */}
           <Card className="md:col-span-2">
-            <CardContent>
-              <h2 className="font-semibold mb-3">🖊️ Whiteboard</h2>
-              <canvas
-                ref={canvasRef}
-                width={870}
-                height={400}
-                className="border rounded-2xl bg-white shadow-inner"
-              />
-            </CardContent>
-          </Card>
+  <CardContent>
+    <div className="flex items-center justify-between mb-3">
+      <h2 className="font-semibold">🖊️ Whiteboard</h2>
+
+      {/* TOOLBAR */}
+      <div className="flex gap-2 items-center">
+        <select
+          value={tool}
+          onChange={(e) => setTool(e.target.value)}
+          className="px-3 py-1 rounded-xl border bg-white text-sm"
+        >
+          <option value="brush">Brush</option>
+          <option value="rect">Rectangle</option>
+          <option value="circle">Circle</option>
+        </select>
+
+        <input
+          type="color"
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+          className="w-10 h-8 rounded-lg border"
+        />
+
+        <button className="px-3 py-1 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm">
+          Clear
+        </button>
+      </div>
+    </div>
+
+    {/* WORKSPACE */}
+    <div className="flex justify-center">
+      <div className="relative bg-gray-100 p-3 rounded-2xl border shadow-inner">
+        <canvas
+          ref={canvasRef}
+          width={700}
+          height={380}
+          className="rounded-xl bg-white border shadow-sm"
+        />
+      </div>
+    </div>
+
+    {/* TOOL HINTS (optional but UI clarity boost) */}
+    <div className="mt-2 text-xs text-gray-400 text-center">
+      Brush • Shapes • Color tools enabled
+    </div>
+  </CardContent>
+</Card>
 
           {/* TASKS */}
           <Card>
