@@ -47,8 +47,25 @@ const missions = [
 export default function SproutRoom({ roomCode, userData, leaveRoom }) {
   const { user } = useAuth();
   const isTeacher = userData?.role === "teacher";
+  const getDeviceId = () => {
+    if (typeof window === "undefined") return "server";
+    let id = localStorage.getItem("sprout_device_id");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("sprout_device_id", id);
+    }
+    return id;
+  };
+  
+  const deviceId = getDeviceId();
+  const presenceId = user?.uid ? `${user.uid}_${deviceId}` : null;
 
-  usePresence(roomCode, user?.uid, userData?.name || userData?.displayName || "Teacher", userData?.role || "student");
+  usePresence(
+    roomCode,
+    presenceId,
+    userData?.name || userData?.displayName || "Teacher",
+    userData?.role || "student"
+  );
 
   const [onlineUsers, setOnlineUsers] = useState([]);
   useEffect(() => {
@@ -202,7 +219,17 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
     await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "rooms", roomCode, "messages", d.id))));
   };
 
-  const students = onlineUsers.filter(u => u.role === "student");
+  const studentsMap = new Map();
+
+onlineUsers.forEach((u) => {
+  if (u.role === "student") {
+    if (!studentsMap.has(u.uid)) {
+      studentsMap.set(u.uid, u);
+    }
+  }
+});
+
+const students = Array.from(studentsMap.values());
   const teachers = onlineUsers.filter(u => u.role === "teacher");
   const currentRoom = roomMetadata[roomCode] || roomMetadata["JP-NZ-01"];
   const todayMission = missions[new Date().getDate() % missions.length];
