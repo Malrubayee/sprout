@@ -29,8 +29,8 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
   const myUid = currentUser?.uid;
   const myName = currentUser?.name || currentUser?.displayName || "Student";
   console.log("MY UID:", myUid);
-console.log("CURRENT USER:", currentUser);
-console.log("ONLINE STUDENTS:", onlineStudents);
+  console.log("CURRENT USER:", currentUser);
+  console.log("ONLINE STUDENTS:", onlineStudents);
 
 
   // Listen for incoming calls
