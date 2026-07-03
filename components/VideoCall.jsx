@@ -114,13 +114,16 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
     await pc.setLocalDescription(offer);
 
     // Send offer to target
-    await setDoc(doc(db, "rooms", roomCode, "calls", targetUid), {
-      type: "offer",
-      callId,
-      fromUid: myUid,
-      fromName: myName,
-      offer: { type: offer.type, sdp: offer.sdp },
-    });
+    try {
+      await setDoc(doc(db, "rooms", roomCode, "calls", callId), {
+        type: "answer",
+        answer: { type: answer.type, sdp: answer.sdp },
+      });
+    
+      console.log("✅ Answer written");
+    } catch (err) {
+      console.error("❌ Failed to write answer", err);
+    }
 
     // Listen for answer
     const unsub = onSnapshot(doc(db, "rooms", roomCode, "calls", callId), async (snap) => {
