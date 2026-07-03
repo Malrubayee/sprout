@@ -292,18 +292,15 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
           <CardContent>
             <h2 className="font-semibold mb-4">🎥 Video Call</h2>
             <VideoCall
-  roomCode={roomCode}
-  currentUser={{
-    uid: "test123",
-    name: "Test User",
-  }}
-  onlineStudents={[
-    {
-      uid: "student456",
-      name: "Another Student",
-    },
-  ]}
-/>
+              roomCode={roomCode}
+              currentUser={{
+                uid: user?.uid,
+                name: userData?.name || user?.displayName || "Student",
+                displayName: user?.displayName,
+                role: userData?.role || "student",
+              }}
+              onlineStudents={onlineUsers}
+            />
           </CardContent>
         </Card>
 
