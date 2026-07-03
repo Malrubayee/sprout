@@ -129,6 +129,7 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
     const unsub = onSnapshot(doc(db, "rooms", roomCode, "calls", callId), async (snap) => {
       if (!snap.exists()) return;
       const data = snap.data();
+      console.log("Incoming call document:", data);
       if (data.type === "answer" && !pc.currentRemoteDescription) {
         await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
         unsub();
