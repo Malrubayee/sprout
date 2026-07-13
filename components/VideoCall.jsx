@@ -151,9 +151,6 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
         hangupCleanup();
       }
     });
-
-    // Listen for their ICE candidates
-    listenForCandidates(callId, myUid, pc);
   };
 
   // CALLEE: accept incoming call
