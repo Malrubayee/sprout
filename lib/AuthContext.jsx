@@ -1,5 +1,7 @@
 "use client";
 
+import { rtdb } from "./firebase";
+import { ref, remove } from "firebase/database";
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "./firebase";
 import {
@@ -78,9 +80,23 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    await signOut(auth);
-    setSproutUser(null);
-    localStorage.removeItem("sproutUser");
+    try {
+      if (sproutUser?.roomCode && user?.uid) {
+        console.log("👋 Removing presence before logout");
+  
+        await remove(
+          ref(rtdb, `presence/${sproutUser.roomCode}/${user.uid}`)
+        );
+      }
+  
+      await signOut(auth);
+  
+      setSproutUser(null);
+      localStorage.removeItem("sproutUser");
+  
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
   };
 
   return (
