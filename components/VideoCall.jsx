@@ -80,6 +80,7 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
 
     // When we get remote stream
     pc.ontrack = (e) => {
+      console.log("📹 Remote stream received");
       if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0];
     };
 
@@ -91,8 +92,27 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "connected") setCallState("connected");
-      if (pc.connectionState === "disconnected" || pc.connectionState === "failed") hangupCleanup();
+      console.log("Connection State:", pc.connectionState);
+
+      switch (pc.connectionState) {
+
+      case "connected":
+      setCallState("connected");
+      break;
+
+      case "disconnected":
+      case "failed":
+      hangupCleanup();
+      break;
+
+      case "connecting":
+      case "new":
+      case "closed":
+      break;
+
+      default:
+      console.warn("Unknown connection state:", pc.connectionState);
+    }
     };
 
     return pc;
