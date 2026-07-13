@@ -115,14 +115,24 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
 
     // Send offer to target
     try {
-      await setDoc(doc(db, "rooms", roomCode, "calls", callId), {
-        type: "answer",
-        answer: { type: answer.type, sdp: answer.sdp },
-      });
+      await setDoc(
+        doc(db, "rooms", roomCode, "calls", targetUid),
+        {
+          type: "offer",
+          offer: {
+            type: offer.type,
+            sdp: offer.sdp,
+          },
+          fromUid: myUid,
+          fromName: myName,
+          callId,
+        }
+      );
     
-      console.log("✅ Answer written");
+      console.log("✅ Offer sent to", targetUid);
+    
     } catch (err) {
-      console.error("❌ Failed to write answer", err);
+      console.error("❌ Failed to send offer", err);
     }
 
     // Listen for answer
