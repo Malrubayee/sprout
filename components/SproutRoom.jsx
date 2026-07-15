@@ -86,7 +86,12 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
 
   useEffect(() => {
     const q = query(collection(db, "rooms", roomCode, "messages"), orderBy("createdAt"));
-    return onSnapshot(q, (snap) => setMessages(snap.docs.map(d => d.data())));
+    return onSnapshot(q, (snap) => setMessages(
+      snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }))
+    ));
   }, [roomCode]);
 
   const drawFromData = (items) => {
@@ -203,6 +208,24 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
     setLines([]);
   };
 
+  const clearChat = async () => {
+    const confirmed = window.confirm(
+      "Clear all chat messages? This cannot be undone."
+    );
+  
+    if (!confirmed) return;
+  
+    const snap = await getDocs(
+      collection(db, "rooms", roomCode, "messages")
+    );
+  
+    await Promise.all(
+      snap.docs.map((d) =>
+        deleteDoc(doc(db, "rooms", roomCode, "messages", d.id))
+      )
+    );
+  };
+
   const students = onlineUsers.filter(u => u.role === "student");
   const teachers = onlineUsers.filter(u => u.role === "teacher");
 
@@ -269,7 +292,18 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
         {/* CHAT */}
         <Card>
           <CardContent>
-            <h2 className="font-semibold mb-2">💬 Messages</h2>
+              <div className="flex justify-between items-center mb-2">
+              <h2 className="font-semibold">💬 Messages</h2>
+                {userData?.role === "teacher" && (
+                  <Button
+                    variant="danger"
+                    onClick={clearChat}
+                    className="px-3 py-1 text-sm"
+                  >
+                  🗑️ Clear
+                  </Button>
+                )}
+              </div>
             <div className="h-40 overflow-y-auto bg-gray-100 rounded-xl p-2 text-sm">
               {messages.map((msg, i) => (
                 <div key={i}><strong>{msg.school}:</strong> {msg.text}</div>
