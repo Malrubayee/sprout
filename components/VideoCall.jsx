@@ -9,8 +9,20 @@ import {
 
 const ICE_SERVERS = {
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
+    {
+      urls: [
+        "stun:stun.l.google.com:19302",
+        "stun:stun1.l.google.com:19302",
+      ],
+    },
+    {
+      urls: [
+        "turn:YOUR_TURN_SERVER:3478?transport=udp",
+        "turn:YOUR_TURN_SERVER:3478?transport=tcp",
+      ],
+      username: "YOUR_USERNAME",
+      credential: "YOUR_PASSWORD",
+    },
   ],
 };
 
@@ -128,6 +140,8 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
     setCallState("calling");
 
     const pc = createPeerConnection(callId, targetUid);
+    
+    listenForCandidates(callId, fromUid, pc);
 
     // Create offer
     const offer = await pc.createOffer();
@@ -200,8 +214,6 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
     });
 
     // Listen for caller's ICE candidates
-    listenForCandidates(callId, fromUid, pc);
-    listenForCandidates(callId, myUid, pc);
 
     setIncomingCall(null);
   };
