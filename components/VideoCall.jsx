@@ -31,6 +31,7 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
   const remoteVideoRef = useRef(null);
   const pcRef = useRef(null);
   const localStreamRef = useRef(null);
+  const pendingCandidatesRef = useRef([]);
 
   const [cameraOn, setCameraOn] = useState(false);
   const [callState, setCallState] = useState("idle"); // idle | calling | incoming | connected
@@ -140,7 +141,7 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
     setCallState("calling");
 
     const pc = createPeerConnection(callId, targetUid);
-    
+
     listenForCandidates(callId, fromUid, pc);
 
     // Create offer
@@ -176,6 +177,9 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
       console.log("Incoming call document:", data);
       if (data.type === "answer" && !pc.currentRemoteDescription) {
         await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        while (pendingCandidatesRef.current.length) {
+          await pc.addIceCandidate(pendingCandidatesRef.current.shift());
+        }
         unsub();
         // Start listening for their ICE candidates
         listenForCandidates(callId, targetUid, pc);
@@ -202,6 +206,9 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
     const offerSnap = await getDoc(doc(db, "rooms", roomCode, "calls", myUid));
     const { offer } = offerSnap.data();
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    while (pendingCandidatesRef.current.length) {
+      await pc.addIceCandidate(pendingCandidatesRef.current.shift());
+    }
 
     // Create answer
     const answer = await pc.createAnswer();
@@ -226,11 +233,25 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
   };
 
   const listenForCandidates = (callId, uid, pc) => {
-    const colRef = collection(db, "rooms", roomCode, "calls", callId, "candidates_" + uid);
+    const colRef = collection(
+      db,
+      "rooms",
+      roomCode,
+      "calls",
+      callId,
+      "candidates_" + uid
+    );
+  
     return onSnapshot(colRef, (snap) => {
-      snap.docChanges().forEach(change => {
-        if (change.type === "added") {
-          pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+      snap.docChanges().forEach(async (change) => {
+        if (change.type !== "added") return;
+  
+        const candidate = new RTCIceCandidate(change.doc.data());
+  
+        if (pc.remoteDescription) {
+          await pc.addIceCandidate(candidate);
+        } else {
+          pendingCandidatesRef.current.push(candidate);
         }
       });
     });
