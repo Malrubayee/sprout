@@ -8,6 +8,7 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
   const { teacherSignIn, teacherSignUp, studentJoin } = useAuth();
 
   const [mode, setMode] = useState("family");
+  const [familyTab, setFamilyTab] = useState("login");
   const [teacherTab, setTeacherTab] = useState("signin");
 
   // Student fields
@@ -27,9 +28,9 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
   const [loading, setLoading] = useState(false);
   const [familySubmitted, setFamilySubmitted] = useState(false);
 
-  // --------------------------------
-  // STUDENT JOIN
-  // --------------------------------
+  // --------------------------------------------------
+  // STUDENT
+  // --------------------------------------------------
 
   const handleStudentJoin = async () => {
     setError("");
@@ -61,9 +62,9 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
     }
   };
 
-  // --------------------------------
-  // TEACHER SIGN IN
-  // --------------------------------
+  // --------------------------------------------------
+  // SCHOOL / TEACHER
+  // --------------------------------------------------
 
   const handleTeacherSignIn = async () => {
     setError("");
@@ -89,10 +90,6 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
       setLoading(false);
     }
   };
-
-  // --------------------------------
-  // TEACHER SIGN UP
-  // --------------------------------
 
   const handleTeacherSignUp = async () => {
     setError("");
@@ -138,9 +135,9 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
     }
   };
 
-  // --------------------------------
+  // --------------------------------------------------
   // FAMILY CONSULTATION
-  // --------------------------------
+  // --------------------------------------------------
 
   const handleFamilySubmit = () => {
     setError("");
@@ -155,20 +152,45 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
 
     setLoading(true);
 
-    // For now, this simply confirms the request.
-    // We can connect this to Firebase later.
+    // Temporary front-end behaviour.
+    // This will later connect to parent account creation.
     setTimeout(() => {
       setLoading(false);
       setFamilySubmitted(true);
     }, 500);
   };
 
+  // --------------------------------------------------
+  // FAMILY LOGIN
+  // --------------------------------------------------
+
+  const handleFamilyLogin = () => {
+    setError("");
+
+    if (!parentEmail.trim()) {
+      return setError("Please enter your email address.");
+    }
+
+    if (!password) {
+      return setError("Please enter your password.");
+    }
+
+    // Parent authentication will be connected here.
+    setError(
+      "Family login is not connected yet. We'll add this to your parent account system next."
+    );
+  };
+
+  // --------------------------------------------------
+  // PAGE
+  // --------------------------------------------------
+
   return (
     <div className="flex items-center justify-center min-h-screen p-4 bg-gray-50">
 
       <div className="bg-white rounded-3xl shadow-sm border p-8 w-full max-w-md">
 
-        {/* HEADER */}
+        {/* LOGO */}
 
         <div className="text-center mb-8">
 
@@ -187,7 +209,7 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
         </div>
 
 
-        {/* ROLE SELECTOR */}
+        {/* MAIN ROLE TABS */}
 
         <div className="flex gap-2 mb-6">
 
@@ -195,7 +217,6 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
             onClick={() => {
               setMode("family");
               setError("");
-              setFamilySubmitted(false);
             }}
             className={`flex-1 py-2 rounded-xl font-medium transition-all ${
               mode === "family"
@@ -208,6 +229,7 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
               Family
             </div>
           </button>
+
 
           <button
             onClick={() => {
@@ -225,6 +247,7 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
               Student
             </div>
           </button>
+
 
           <button
             onClick={() => {
@@ -246,126 +269,79 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
         </div>
 
 
-        {/* ================================= */}
-        {/* FAMILY */}
-        {/* ================================= */}
+        {/* ==================================================
+            FAMILY
+        ================================================== */}
 
         {mode === "family" && (
 
           <div>
 
-            {!familySubmitted ? (
+            <h2 className="text-2xl font-semibold mb-2">
+              Sprout for Families
+            </h2>
 
-              <>
-                <h2 className="text-2xl font-semibold mb-2">
-                  Sprout for Families
-                </h2>
+            <p className="text-gray-500 text-sm leading-relaxed mb-6">
+              Give your child the opportunity to connect,
+              collaborate and make friends with children
+              around the world.
+            </p>
 
-                <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                  Give your child the opportunity to connect,
-                  collaborate and make friends with children
-                  around the world.
+
+            {/* FAMILY LOGIN / GET STARTED TABS */}
+
+            <div className="flex gap-2 mb-6">
+
+              <button
+                onClick={() => {
+                  setFamilyTab("login");
+                  setError("");
+                  setFamilySubmitted(false);
+                }}
+                className={`flex-1 py-2 rounded-xl text-sm transition-all ${
+                  familyTab === "login"
+                    ? "bg-emerald-100 text-emerald-900 font-medium"
+                    : "text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                Log In
+              </button>
+
+
+              <button
+                onClick={() => {
+                  setFamilyTab("signup");
+                  setError("");
+                  setFamilySubmitted(false);
+                }}
+                className={`flex-1 py-2 rounded-xl text-sm transition-all ${
+                  familyTab === "signup"
+                    ? "bg-emerald-100 text-emerald-900 font-medium"
+                    : "text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                Get Started
+              </button>
+
+            </div>
+
+
+            {/* ----------------------------------------------
+                FAMILY LOGIN
+            ---------------------------------------------- */}
+
+            {familyTab === "login" && (
+
+              <div>
+
+                <p className="text-gray-500 text-sm leading-relaxed mb-5">
+                  Already part of Sprout? Log in to manage
+                  your child's profile, upcoming exchanges
+                  and activities.
                 </p>
 
 
-                {/* FEATURES */}
-
-                <div className="space-y-4 mb-6">
-
-                  <div className="flex gap-3">
-
-                    <div className="text-xl">
-                      🌏
-                    </div>
-
-                    <div>
-                      <p className="font-medium">
-                        Connect with the world
-                      </p>
-
-                      <p className="text-sm text-gray-500">
-                        Meet children from different countries
-                        and cultures.
-                      </p>
-                    </div>
-
-                  </div>
-
-
-                  <div className="flex gap-3">
-
-                    <div className="text-xl">
-                      🤝
-                    </div>
-
-                    <div>
-                      <p className="font-medium">
-                        Learn together
-                      </p>
-
-                      <p className="text-sm text-gray-500">
-                        Work together through fun projects
-                        and activities.
-                      </p>
-                    </div>
-
-                  </div>
-
-
-                  <div className="flex gap-3">
-
-                    <div className="text-xl">
-                      🔒
-                    </div>
-
-                    <div>
-                      <p className="font-medium">
-                        Designed with privacy in mind
-                      </p>
-
-                      <p className="text-sm text-gray-500">
-                        Sprout is designed as a controlled
-                        environment rather than an open
-                        social network.
-                      </p>
-                    </div>
-
-                  </div>
-
-                </div>
-
-
-                {/* CONSULTATION BOX */}
-
-                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-6">
-
-                  <p className="font-medium text-emerald-900 mb-1">
-                    🌱 Start with a free consultation
-                  </p>
-
-                  <p className="text-sm text-emerald-800 leading-relaxed">
-                    Before your child joins Sprout, a member
-                    of the QT team will meet with you and your
-                    child to understand their interests,
-                    goals and learning needs.
-                  </p>
-
-                </div>
-
-
-                {/* FAMILY FORM */}
-
                 <div className="space-y-4">
-
-                  <input
-                    placeholder="Parent / guardian name"
-                    value={parentName}
-                    onChange={(e) =>
-                      setParentName(e.target.value)
-                    }
-                    className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-200"
-                  />
-
 
                   <input
                     placeholder="Parent / guardian email"
@@ -374,9 +350,20 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
                     onChange={(e) =>
                       setParentEmail(e.target.value)
                     }
+                    className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-200"
+                  />
+
+
+                  <input
+                    placeholder="Password"
+                    type="password"
+                    value={password}
+                    onChange={(e) =>
+                      setPassword(e.target.value)
+                    }
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        handleFamilySubmit();
+                        handleFamilyLogin();
                       }
                     }}
                     className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-200"
@@ -384,52 +371,205 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
 
 
                   <button
-                    onClick={handleFamilySubmit}
+                    onClick={handleFamilyLogin}
                     disabled={loading}
                     className="w-full bg-emerald-200 hover:bg-emerald-300 py-3 rounded-2xl font-medium disabled:opacity-50 transition-all"
                   >
                     {loading
-                      ? "Submitting..."
-                      : "Request Free Consultation"}
+                      ? "Logging in..."
+                      : "Log In"}
+                  </button>
+
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFamilyTab("signup");
+                      setError("");
+                    }}
+                    className="w-full text-sm text-emerald-700 hover:text-emerald-900"
+                  >
+                    New to Sprout? Get started →
                   </button>
 
                 </div>
 
-              </>
+              </div>
 
-            ) : (
+            )}
 
-              /* SUCCESS MESSAGE */
 
-              <div className="text-center py-6">
+            {/* ----------------------------------------------
+                FAMILY GET STARTED
+            ---------------------------------------------- */}
 
-                <div className="text-5xl mb-4">
-                  🌱
-                </div>
+            {familyTab === "signup" && (
 
-                <h2 className="text-2xl font-semibold mb-3">
-                  Thanks, {parentName}!
-                </h2>
+              <div>
 
-                <p className="text-gray-500 leading-relaxed mb-6">
-                  We've received your request for a free
-                  Sprout family consultation.
-                </p>
+                {!familySubmitted ? (
 
-                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-left">
+                  <>
 
-                  <p className="font-medium text-emerald-900 mb-2">
-                    What happens next?
-                  </p>
+                    <div className="space-y-4 mb-6">
 
-                  <p className="text-sm text-emerald-800 leading-relaxed">
-                    A member of the QT team will get in touch
-                    with you at the email address you provided
-                    to arrange a convenient time to meet with
-                    you and your child.
-                  </p>
+                      <div className="flex gap-3">
 
-                </div>
+                        <div className="text-xl">
+                          🌏
+                        </div>
+
+                        <div>
+                          <p className="font-medium">
+                            Connect with the world
+                          </p>
+
+                          <p className="text-sm text-gray-500">
+                            Meet children from different
+                            countries and cultures.
+                          </p>
+                        </div>
+
+                      </div>
+
+
+                      <div className="flex gap-3">
+
+                        <div className="text-xl">
+                          🤝
+                        </div>
+
+                        <div>
+                          <p className="font-medium">
+                            Learn together
+                          </p>
+
+                          <p className="text-sm text-gray-500">
+                            Work together through fun projects
+                            and activities.
+                          </p>
+                        </div>
+
+                      </div>
+
+
+                      <div className="flex gap-3">
+
+                        <div className="text-xl">
+                          🔒
+                        </div>
+
+                        <div>
+                          <p className="font-medium">
+                            Designed with privacy in mind
+                          </p>
+
+                          <p className="text-sm text-gray-500">
+                            Sprout is designed as a controlled
+                            environment rather than an open
+                            social network.
+                          </p>
+                        </div>
+
+                      </div>
+
+                    </div>
+
+
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-6">
+
+                      <p className="font-medium text-emerald-900 mb-1">
+                        🌱 Start with a free consultation
+                      </p>
+
+                      <p className="text-sm text-emerald-800 leading-relaxed">
+                        Before your child joins Sprout, a
+                        member of the QT team will meet with
+                        you and your child to understand their
+                        interests, goals and learning needs.
+                      </p>
+
+                    </div>
+
+
+                    <div className="space-y-4">
+
+                      <input
+                        placeholder="Parent / guardian name"
+                        value={parentName}
+                        onChange={(e) =>
+                          setParentName(e.target.value)
+                        }
+                        className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-200"
+                      />
+
+
+                      <input
+                        placeholder="Parent / guardian email"
+                        type="email"
+                        value={parentEmail}
+                        onChange={(e) =>
+                          setParentEmail(e.target.value)
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleFamilySubmit();
+                          }
+                        }}
+                        className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-200"
+                      />
+
+
+                      <button
+                        onClick={handleFamilySubmit}
+                        disabled={loading}
+                        className="w-full bg-emerald-200 hover:bg-emerald-300 py-3 rounded-2xl font-medium disabled:opacity-50 transition-all"
+                      >
+                        {loading
+                          ? "Submitting..."
+                          : "Request Free Consultation"}
+                      </button>
+
+                    </div>
+
+                  </>
+
+                ) : (
+
+                  <div className="text-center py-6">
+
+                    <div className="text-5xl mb-4">
+                      🌱
+                    </div>
+
+                    <h2 className="text-2xl font-semibold mb-3">
+                      Thanks, {parentName}!
+                    </h2>
+
+                    <p className="text-gray-500 leading-relaxed mb-6">
+                      We've received your request for a free
+                      Sprout family consultation.
+                    </p>
+
+
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-left">
+
+                      <p className="font-medium text-emerald-900 mb-2">
+                        What happens next?
+                      </p>
+
+                      <p className="text-sm text-emerald-800 leading-relaxed">
+                        A member of the QT team will get in
+                        touch with you at the email address
+                        you provided to arrange a convenient
+                        time to meet with you and your child.
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                )}
 
               </div>
 
@@ -440,9 +580,9 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
         )}
 
 
-        {/* ================================= */}
-        {/* STUDENT */}
-        {/* ================================= */}
+        {/* ==================================================
+            STUDENT
+        ================================================== */}
 
         {mode === "student" && (
 
@@ -456,6 +596,7 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
               Enter the details provided by your teacher.
             </p>
 
+
             <input
               placeholder="Your name"
               value={name}
@@ -464,6 +605,7 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
               }
               className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-sky-200"
             />
+
 
             <input
               placeholder="Room code (e.g. JP-NZ-01)"
@@ -477,6 +619,7 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
               }
               className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-sky-200"
             />
+
 
             <button
               onClick={handleStudentJoin}
@@ -493,9 +636,9 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
         )}
 
 
-        {/* ================================= */}
-        {/* SCHOOL / TEACHER */}
-        {/* ================================= */}
+        {/* ==================================================
+            SCHOOL / TEACHER
+        ================================================== */}
 
         {mode === "teacher" && (
 
@@ -510,8 +653,6 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
               collaboration rooms.
             </p>
 
-
-            {/* TABS */}
 
             <div className="flex gap-2 mb-5">
 
@@ -528,6 +669,7 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
               >
                 Sign In
               </button>
+
 
               <button
                 onClick={() => {
@@ -630,4 +772,3 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
     </div>
   );
 }
-
