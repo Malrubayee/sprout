@@ -7,24 +7,14 @@ import {
   collection, addDoc, deleteDoc, getDocs
 } from "firebase/firestore";
 
-const ICE_SERVERS = {
-  iceServers: [
-    {
-      urls: [
-        "stun:stun.l.google.com:19302",
-        "stun:stun1.l.google.com:19302",
-      ],
-    },
-    {
-      urls: [
-        "turn:YOUR_TURN_SERVER:3478?transport=udp",
-        "turn:YOUR_TURN_SERVER:3478?transport=tcp",
-      ],
-      username: "YOUR_USERNAME",
-      credential: "YOUR_PASSWORD",
-    },
-  ],
-};
+const DEFAULT_ICE_SERVERS = [
+  {
+    urls: [
+      "stun:stun.l.google.com:19302",
+      "stun:stun1.l.google.com:19302",
+    ],
+  },
+];
 
 export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
   const localVideoRef = useRef(null);
@@ -38,6 +28,7 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
   const [incomingCall, setIncomingCall] = useState(null); // { from, callId }
   const [activeCallId, setActiveCallId] = useState(null);
   const [error, setError] = useState("");
+  const [iceServers, setIceServers] = useState(DEFAULT_ICE_SERVERS);
 
   const myUid = currentUser?.uid;
   const myName = currentUser?.name || currentUser?.displayName || "Student";
@@ -45,6 +36,29 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
   console.log("CURRENT USER:", currentUser);
   console.log("ONLINE STUDENTS:", onlineStudents);
 
+  useEffect(() => {
+    const loadTurnServers = async () => {
+      try {
+        const response = await fetch("/api/turn-credentials");
+  
+        if (!response.ok) {
+          console.warn("TURN credentials unavailable");
+          return;
+        }
+  
+        const data = await response.json();
+  
+        if (data.iceServers) {
+          setIceServers(data.iceServers);
+          console.log("TURN servers loaded");
+        }
+      } catch (error) {
+        console.warn("Could not load TURN servers:", error);
+      }
+    };
+  
+    loadTurnServers();
+  }, []);
 
   // Listen for incoming calls
   useEffect(() => {
@@ -83,7 +97,9 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
   };
 
   const createPeerConnection = (callId, targetUid) => {
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+    const pc = new RTCPeerConnection({
+      iceServers,
+    });
     pcRef.current = pc;
 
     // Add local tracks
@@ -142,7 +158,7 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
 
     const pc = createPeerConnection(callId, targetUid);
 
-    listenForCandidates(callId, fromUid, pc);
+    listenForCandidates(callId, targetUid, pc);
 
     // Create offer
     const offer = await pc.createOffer();
