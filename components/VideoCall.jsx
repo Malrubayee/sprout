@@ -312,7 +312,7 @@ export default function VideoCall({ roomCode, currentUser, onlineStudents }) {
           <span className="absolute bottom-1 left-2 text-white text-xs bg-black/40 px-2 py-0.5 rounded-full">You</span>
         </div>
         <div className="relative bg-gray-900 rounded-2xl overflow-hidden h-36 flex items-center justify-center">
-          <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+          <video ref={remoteVideoRef} autoPlay playsInline controls className="w-full h-full object-cover" />
           {callState !== "connected" && (
             <span className="absolute text-gray-500 text-xs">No one connected</span>
           )}
