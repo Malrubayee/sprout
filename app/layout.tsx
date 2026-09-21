@@ -3,6 +3,12 @@ import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../lib/AuthContext";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   title: "Sprout",
   description: "Global Student Collaboration",

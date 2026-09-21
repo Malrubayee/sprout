@@ -155,13 +155,25 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
     await deleteDoc(doc(db, "rooms", roomCode, "tasks", taskId));
   };
 
+  const getCanvasPoint = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+  
+    return {
+      x: (e.clientX - rect.left) * (canvas.width / rect.width),
+      y: (e.clientY - rect.top) * (canvas.height / rect.height),
+    };
+  };
+
   const startDrawing = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setStartPos({ x, y });
+    const canvas = canvasRef.current;
+    canvas.setPointerCapture?.(e.pointerId);
+  
+    const { x, y } = getCanvasPoint(e);
+  
+    setStart({ x, y });
     setLines([{ x, y }]);
-    setDrawing(true);
+    setIsDrawing(true);
   };
 
   const stopDrawing = async (e) => {
@@ -182,6 +194,8 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
     }
   };
 
+
+
   const draw = (e) => {
     if (!drawing || tool !== "brush") return;
     const canvas = canvasRef.current;
@@ -200,6 +214,14 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
       ctx.lineTo(x, y);
       ctx.stroke();
     }
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+  
+    const { x, y } = getCanvasPoint(e);
+  
+    setLines((prev) => [...prev, { x, y }]);
   };
 
   const clearBoard = async () => {
@@ -230,10 +252,10 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
   const teachers = onlineUsers.filter(u => u.role === "teacher");
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <div className="min-h-[100dvh] bg-gray-100 p-2 sm:p-4 safe-area-x safe-area-bottom">
 
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
         <div>
           <button onClick={leaveRoom} className="mb-2 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-2xl">
             ← Leave Room
@@ -287,7 +309,7 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
       </Card>
 
       {/* MAIN GRID */}
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
 
         {/* CHAT */}
         <Card>
@@ -350,17 +372,18 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
         </Card>
 
         {/* WHITEBOARD */}
-        <Card className="md:col-span-2">
+        <Card className="md:col-span-2 xl:col-span-2">
           <CardContent>
             <h2 className="font-semibold mb-2">🖊️ Whiteboard</h2>
             <canvas
               ref={canvasRef}
               width={870}
               height={400}
-              className="border bg-white rounded-xl"
-              onMouseDown={startDrawing}
-              onMouseUp={stopDrawing}
-              onMouseMove={draw}
+              className="sprout-whiteboard border bg-white rounded-xl"
+              onPointerDown={startDrawing}
+              onPointerUp={stopDrawing}
+              onPointerCancel={stopDrawing}
+              onPointerMove={draw}
             />
             <div className="flex gap-4 mt-3">
               {["black", "red", "blue", "green"].map((c) => (
@@ -403,7 +426,7 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
         </Card>
 
         {/* LANGUAGE */}
-        <Card className="md:col-span-3">
+        <Card className="md:col-span-2 xl:col-span-3">
           <CardContent>
             <h2 className="font-semibold mb-4">🌏 Language Corner</h2>
             <LanguageCorner roomCode={roomCode} />
