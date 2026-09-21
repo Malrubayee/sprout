@@ -264,27 +264,32 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
   };
 
   const startDrawing = (e) => {
+    e.preventDefault();
+  
     const canvas = canvasRef.current;
-
+    if (!canvas) return;
+  
     canvas.setPointerCapture?.(e.pointerId);
-
+  
     const point = getCanvasPoint(e);
-
+  
     setStartPos(point);
     setLines([point]);
     setDrawing(true);
   };
-
+  
   const stopDrawing = async (e) => {
+    e.preventDefault();
+  
     if (!drawing || !startPos) {
       setDrawing(false);
       return;
     }
-
+  
     const point = getCanvasPoint(e);
-
+  
     setDrawing(false);
-
+  
     if (tool === "rect") {
       await addDoc(
         collection(db, "rooms", roomCode, "drawings"),
@@ -297,7 +302,7 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
         }
       );
     }
-
+  
     if (tool === "circle") {
       await addDoc(
         collection(db, "rooms", roomCode, "drawings"),
@@ -310,7 +315,7 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
         }
       );
     }
-
+  
     if (tool === "brush" && lines.length > 0) {
       await addDoc(
         collection(db, "rooms", roomCode, "drawings"),
@@ -322,32 +327,37 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
         }
       );
     }
-
+  
     setLines([]);
     setStartPos(null);
   };
-
+  
   const draw = (e) => {
+    e.preventDefault();
+  
     if (!drawing || tool !== "brush") return;
-
+  
     const canvas = canvasRef.current;
+    if (!canvas) return;
+  
     const ctx = canvas.getContext("2d");
     const point = getCanvasPoint(e);
-
+  
     setLines((prev) => {
       const previous = prev[prev.length - 1];
-
+  
       if (previous) {
         ctx.strokeStyle = color;
         ctx.lineWidth = 3;
         ctx.lineCap = "round";
-
+        ctx.lineJoin = "round";
+  
         ctx.beginPath();
         ctx.moveTo(previous.x, previous.y);
         ctx.lineTo(point.x, point.y);
         ctx.stroke();
       }
-
+  
       return [...prev, point];
     });
   };
@@ -591,15 +601,21 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
             </h2>
 
             <canvas
-              ref={canvasRef}
-              width={870}
-              height={400}
-              className="sprout-whiteboard border bg-white rounded-xl"
-              onPointerDown={startDrawing}
-              onPointerUp={stopDrawing}
-              onPointerCancel={stopDrawing}
-              onPointerMove={draw}
-            />
+  ref={canvasRef}
+  width={870}
+  height={400}
+  className="sprout-whiteboard border bg-white rounded-xl"
+  style={{
+    touchAction: "none",
+    WebkitUserSelect: "none",
+    userSelect: "none",
+  }}
+  onPointerDown={startDrawing}
+  onPointerMove={draw}
+  onPointerUp={stopDrawing}
+  onPointerCancel={stopDrawing}
+  onPointerLeave={stopDrawing}
+/>
 
             <div className="flex gap-3 mt-3 flex-wrap">
               {["black", "red", "blue", "green"].map((c) => (
