@@ -216,13 +216,6 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
     }
   };
 
-  const draw = (e) => {
-    if (!isDrawing) return;
-  
-    const { x, y } = getCanvasPoint(e);
-  
-    setLines((prev) => [...prev, { x, y }]);
-  };
 
   const clearBoard = async () => {
     const snap = await getDocs(collection(db, "rooms", roomCode, "drawings"));
