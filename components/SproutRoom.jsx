@@ -86,22 +86,33 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
     return () => unsub();
   }, [roomCode]);
 
-  const [drawing, setDrawing] = useState(false);
-  const [lines, setLines] = useState([]);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [color, setColor] = useState("black");
   const [tool, setTool] = useState("brush");
-  const [startPos, setStartPos] = useState(null);
   const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState("");
+  const [newTask, setNewTask] = useState([]);
+
+  // Whiteboard refs.
+  // Refs are used instead of React state while drawing so rapid
+  // finger movements on iPhone do not get lost between renders.
   const canvasRef = useRef(null);
+  const drawingRef = useRef(false);
+  const linesRef = useRef([]);
+  const startPosRef = useRef(null);
+  const lastPointRef = useRef(null);
+  const activeTouchIdRef = useRef(null);
+  const drawingsRef = useRef([]);
 
   const currentRoom =
     roomMetadata[roomCode] || roomMetadata["JP-NZ-01"];
 
   const todayMission =
     missions[new Date().getDate() % missions.length];
+
+  // ---------------------------------------------------------
+  // TASKS
+  // ---------------------------------------------------------
 
   useEffect(() => {
     const q = query(
@@ -119,16 +130,88 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
     );
   }, [roomCode]);
 
+  // ---------------------------------------------------------
+  // DRAWINGS
+  // ---------------------------------------------------------
+
+  const redrawCanvas = (items = drawingsRef.current) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    items.forEach((item) => {
+      if (!item) return;
+
+      ctx.strokeStyle = item.color || "black";
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      // Brush
+      if (item.type === "brush" && item.lines?.length > 0) {
+        ctx.beginPath();
+        ctx.moveTo(item.lines[0].x, item.lines[0].y);
+
+        for (let i = 1; i < item.lines.length; i++) {
+          ctx.lineTo(item.lines[i].x, item.lines[i].y);
+        }
+
+        ctx.stroke();
+      }
+
+      // Rectangle
+      if (item.type === "rect" && item.start && item.end) {
+        ctx.strokeRect(
+          item.start.x,
+          item.start.y,
+          item.end.x - item.start.x,
+          item.end.y - item.start.y
+        );
+      }
+
+      // Circle
+      if (item.type === "circle" && item.start && item.end) {
+        const dx = item.end.x - item.start.x;
+        const dy = item.end.y - item.start.y;
+
+        ctx.beginPath();
+        ctx.arc(
+          item.start.x,
+          item.start.y,
+          Math.sqrt(dx * dx + dy * dy),
+          0,
+          Math.PI * 2
+        );
+        ctx.stroke();
+      }
+    });
+  };
+
   useEffect(() => {
     const q = query(
       collection(db, "rooms", roomCode, "drawings"),
       orderBy("createdAt")
     );
 
-    return onSnapshot(q, (snap) =>
-      drawFromData(snap.docs.map((d) => d.data()))
-    );
+    return onSnapshot(q, (snap) => {
+      const items = snap.docs.map((d) => d.data());
+
+      drawingsRef.current = items;
+
+      // Wait one animation frame so the canvas definitely exists.
+      requestAnimationFrame(() => {
+        redrawCanvas(items);
+      });
+    });
   }, [roomCode]);
+
+  // ---------------------------------------------------------
+  // MESSAGES
+  // ---------------------------------------------------------
 
   useEffect(() => {
     const q = query(
@@ -146,58 +229,302 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
     );
   }, [roomCode]);
 
-  const drawFromData = (items) => {
+  // ---------------------------------------------------------
+  // CANVAS COORDINATES
+  // ---------------------------------------------------------
+
+  const getCanvasPoint = (clientX, clientY) => {
     const canvas = canvasRef.current;
+
+    if (!canvas) {
+      return { x: 0, y: 0 };
+    }
+
+    const rect = canvas.getBoundingClientRect();
+
+    if (rect.width === 0 || rect.height === 0) {
+      return { x: 0, y: 0 };
+    }
+
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height),
+    };
+  };
+
+  // ---------------------------------------------------------
+  // DRAWING START
+  // ---------------------------------------------------------
+
+  const beginDrawing = (clientX, clientY) => {
+    const canvas = canvasRef.current;
+
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const point = getCanvasPoint(clientX, clientY);
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawingRef.current = true;
+    startPosRef.current = point;
+    lastPointRef.current = point;
+    linesRef.current = [point];
 
-    items.forEach((item) => {
-      if (!item) return;
+    // For brush, draw a tiny dot immediately.
+    if (tool === "brush") {
+      const ctx = canvas.getContext("2d");
 
-      ctx.strokeStyle = item.color || "black";
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      if (item.type === "brush" && item.lines?.length > 0) {
-        ctx.beginPath();
-        ctx.moveTo(item.lines[0].x, item.lines[0].y);
-
-        for (let i = 1; i < item.lines.length; i++) {
-          ctx.lineTo(item.lines[i].x, item.lines[i].y);
-        }
-
-        ctx.stroke();
-      }
-
-      if (item.type === "rect") {
-        ctx.strokeRect(
-          item.start.x,
-          item.start.y,
-          item.end.x - item.start.x,
-          item.end.y - item.start.y
-        );
-      }
-
-      if (item.type === "circle") {
-        const dx = item.end.x - item.start.x;
-        const dy = item.end.y - item.start.y;
-
-        ctx.beginPath();
-        ctx.arc(
-          item.start.x,
-          item.start.y,
-          Math.sqrt(dx * dx + dy * dy),
-          0,
-          Math.PI * 2
-        );
-        ctx.stroke();
-      }
-    });
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   };
+
+  // ---------------------------------------------------------
+  // DRAWING MOVE
+  // ---------------------------------------------------------
+
+  const continueDrawing = (clientX, clientY) => {
+    if (!drawingRef.current) return;
+
+    const canvas = canvasRef.current;
+
+    if (!canvas) return;
+
+    const point = getCanvasPoint(clientX, clientY);
+
+    if (tool === "brush") {
+      const ctx = canvas.getContext("2d");
+      const previous = lastPointRef.current;
+
+      if (previous) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        ctx.beginPath();
+        ctx.moveTo(previous.x, previous.y);
+        ctx.lineTo(point.x, point.y);
+        ctx.stroke();
+      }
+
+      linesRef.current.push(point);
+      lastPointRef.current = point;
+    }
+  };
+
+  // ---------------------------------------------------------
+  // DRAWING END
+  // ---------------------------------------------------------
+
+  const finishDrawing = async (clientX, clientY) => {
+    if (!drawingRef.current) return;
+
+    const point = getCanvasPoint(clientX, clientY);
+
+    drawingRef.current = false;
+
+    const start = startPosRef.current;
+
+    if (!start) {
+      linesRef.current = [];
+      lastPointRef.current = null;
+      return;
+    }
+
+    try {
+      // Rectangle
+      if (tool === "rect") {
+        await addDoc(
+          collection(db, "rooms", roomCode, "drawings"),
+          {
+            type: "rect",
+            start,
+            end: point,
+            color,
+            createdAt: serverTimestamp(),
+          }
+        );
+      }
+
+      // Circle
+      if (tool === "circle") {
+        await addDoc(
+          collection(db, "rooms", roomCode, "drawings"),
+          {
+            type: "circle",
+            start,
+            end: point,
+            color,
+            createdAt: serverTimestamp(),
+          }
+        );
+      }
+
+      // Brush
+      if (tool === "brush" && linesRef.current.length > 0) {
+        const finalLines = [
+          ...linesRef.current,
+          point,
+        ];
+
+        await addDoc(
+          collection(db, "rooms", roomCode, "drawings"),
+          {
+            type: "brush",
+            lines: finalLines,
+            color,
+            createdAt: serverTimestamp(),
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Failed to save drawing:", error);
+    }
+
+    linesRef.current = [];
+    startPosRef.current = null;
+    lastPointRef.current = null;
+  };
+
+  // ---------------------------------------------------------
+  // IPHONE / IPAD TOUCH EVENTS
+  // ---------------------------------------------------------
+
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+
+    if (drawingRef.current) return;
+
+    const touch = e.changedTouches[0];
+
+    if (!touch) return;
+
+    activeTouchIdRef.current = touch.identifier;
+
+    beginDrawing(touch.clientX, touch.clientY);
+  };
+
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+
+    if (!drawingRef.current) return;
+
+    const touch = Array.from(e.changedTouches).find(
+      (t) => t.identifier === activeTouchIdRef.current
+    );
+
+    if (!touch) return;
+
+    continueDrawing(touch.clientX, touch.clientY);
+  };
+
+  const handleTouchEnd = async (e) => {
+    e.preventDefault();
+
+    if (!drawingRef.current) return;
+
+    const touch = Array.from(e.changedTouches).find(
+      (t) => t.identifier === activeTouchIdRef.current
+    );
+
+    if (!touch) return;
+
+    activeTouchIdRef.current = null;
+
+    await finishDrawing(
+      touch.clientX,
+      touch.clientY
+    );
+  };
+
+  const handleTouchCancel = async (e) => {
+    e.preventDefault();
+
+    if (!drawingRef.current) return;
+
+    const touch = Array.from(e.changedTouches).find(
+      (t) => t.identifier === activeTouchIdRef.current
+    );
+
+    activeTouchIdRef.current = null;
+
+    if (touch) {
+      await finishDrawing(
+        touch.clientX,
+        touch.clientY
+      );
+    } else {
+      drawingRef.current = false;
+      linesRef.current = [];
+      startPosRef.current = null;
+      lastPointRef.current = null;
+    }
+  };
+
+  // ---------------------------------------------------------
+  // LAPTOP / DESKTOP MOUSE EVENTS
+  // ---------------------------------------------------------
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+
+    beginDrawing(e.clientX, e.clientY);
+  };
+
+  const handleMouseMove = (e) => {
+    e.preventDefault();
+
+    continueDrawing(e.clientX, e.clientY);
+  };
+
+  const handleMouseUp = async (e) => {
+    e.preventDefault();
+
+    await finishDrawing(
+      e.clientX,
+      e.clientY
+    );
+  };
+
+  const handleMouseLeave = async (e) => {
+    if (!drawingRef.current) return;
+
+    await finishDrawing(
+      e.clientX,
+      e.clientY
+    );
+  };
+
+  // ---------------------------------------------------------
+  // CLEAR WHITEBOARD
+  // ---------------------------------------------------------
+
+  const clearBoard = async () => {
+    const snap = await getDocs(
+      collection(db, "rooms", roomCode, "drawings")
+    );
+
+    await Promise.all(
+      snap.docs.map((d) =>
+        deleteDoc(
+          doc(db, "rooms", roomCode, "drawings", d.id)
+        )
+      )
+    );
+
+    drawingsRef.current = [];
+    linesRef.current = [];
+    startPosRef.current = null;
+    lastPointRef.current = null;
+    drawingRef.current = false;
+
+    redrawCanvas([]);
+  };
+
+  // ---------------------------------------------------------
+  // CHAT
+  // ---------------------------------------------------------
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -209,12 +536,20 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
       collection(db, "rooms", roomCode, "messages"),
       {
         text,
-        userId: userData?.name || userData?.teacherId,
-        school: userData?.name || "Teacher",
+        userId:
+          userData?.name ||
+          userData?.teacherId,
+        school:
+          userData?.name ||
+          "Teacher",
         createdAt: serverTimestamp(),
       }
     );
   };
+
+  // ---------------------------------------------------------
+  // TASKS
+  // ---------------------------------------------------------
 
   const addTask = async () => {
     if (!newTask.trim()) return;
@@ -246,138 +581,9 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
     );
   };
 
-  // Convert screen coordinates into the canvas's actual 870x400 coordinates.
-  // This keeps drawing accurate when the canvas is resized on phones/tablets.
-  const getCanvasPoint = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-
-    return {
-      x:
-        (e.clientX - rect.left) *
-        (canvas.width / rect.width),
-
-      y:
-        (e.clientY - rect.top) *
-        (canvas.height / rect.height),
-    };
-  };
-
-  const startDrawing = (e) => {
-    e.preventDefault();
-  
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-  
-    canvas.setPointerCapture?.(e.pointerId);
-  
-    const point = getCanvasPoint(e);
-  
-    setStartPos(point);
-    setLines([point]);
-    setDrawing(true);
-  };
-  
-  const stopDrawing = async (e) => {
-    e.preventDefault();
-  
-    if (!drawing || !startPos) {
-      setDrawing(false);
-      return;
-    }
-  
-    const point = getCanvasPoint(e);
-  
-    setDrawing(false);
-  
-    if (tool === "rect") {
-      await addDoc(
-        collection(db, "rooms", roomCode, "drawings"),
-        {
-          type: "rect",
-          start: startPos,
-          end: point,
-          color,
-          createdAt: serverTimestamp(),
-        }
-      );
-    }
-  
-    if (tool === "circle") {
-      await addDoc(
-        collection(db, "rooms", roomCode, "drawings"),
-        {
-          type: "circle",
-          start: startPos,
-          end: point,
-          color,
-          createdAt: serverTimestamp(),
-        }
-      );
-    }
-  
-    if (tool === "brush" && lines.length > 0) {
-      await addDoc(
-        collection(db, "rooms", roomCode, "drawings"),
-        {
-          type: "brush",
-          lines: [...lines, point],
-          color,
-          createdAt: serverTimestamp(),
-        }
-      );
-    }
-  
-    setLines([]);
-    setStartPos(null);
-  };
-  
-  const draw = (e) => {
-    e.preventDefault();
-  
-    if (!drawing || tool !== "brush") return;
-  
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-  
-    const ctx = canvas.getContext("2d");
-    const point = getCanvasPoint(e);
-  
-    setLines((prev) => {
-      const previous = prev[prev.length - 1];
-  
-      if (previous) {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 3;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-  
-        ctx.beginPath();
-        ctx.moveTo(previous.x, previous.y);
-        ctx.lineTo(point.x, point.y);
-        ctx.stroke();
-      }
-  
-      return [...prev, point];
-    });
-  };
-
-  const clearBoard = async () => {
-    const snap = await getDocs(
-      collection(db, "rooms", roomCode, "drawings")
-    );
-
-    await Promise.all(
-      snap.docs.map((d) =>
-        deleteDoc(
-          doc(db, "rooms", roomCode, "drawings", d.id)
-        )
-      )
-    );
-
-    setLines([]);
-    setStartPos(null);
-  };
+  // ---------------------------------------------------------
+  // CLEAR CHAT
+  // ---------------------------------------------------------
 
   const clearChat = async () => {
     const confirmed = window.confirm(
@@ -566,7 +772,8 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
                   userData?.name ||
                   user?.displayName ||
                   "Student",
-                displayName: user?.displayName,
+                displayName:
+                  user?.displayName,
                 role:
                   userData?.role ||
                   "student",
@@ -600,22 +807,48 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
               🖊️ Whiteboard
             </h2>
 
-            <canvas
-  ref={canvasRef}
-  width={870}
-  height={400}
-  className="sprout-whiteboard border bg-white rounded-xl"
-  style={{
-    touchAction: "none",
-    WebkitUserSelect: "none",
-    userSelect: "none",
-  }}
-  onPointerDown={startDrawing}
-  onPointerMove={draw}
-  onPointerUp={stopDrawing}
-  onPointerCancel={stopDrawing}
-  onPointerLeave={stopDrawing}
-/>
+            <div
+              className="w-full overflow-hidden rounded-xl border bg-white"
+              style={{
+                touchAction: "none",
+                WebkitUserSelect: "none",
+                userSelect: "none",
+                WebkitTouchCallout: "none",
+              }}
+            >
+              <canvas
+                ref={canvasRef}
+                width={870}
+                height={400}
+                className="block w-full h-auto"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  height: "auto",
+                  aspectRatio: "870 / 400",
+                  touchAction: "none",
+                  WebkitUserSelect: "none",
+                  userSelect: "none",
+                  WebkitTouchCallout: "none",
+                }}
+
+                /* iPhone / iPad */
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onTouchCancel={handleTouchCancel}
+
+                /* Laptop / desktop */
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+
+                onContextMenu={(e) =>
+                  e.preventDefault()
+                }
+              />
+            </div>
 
             <div className="flex gap-3 mt-3 flex-wrap">
               {["black", "red", "blue", "green"].map((c) => (
@@ -636,15 +869,36 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
             </div>
 
             <div className="flex gap-3 mt-3 flex-wrap">
-              <Button onClick={() => setTool("brush")}>
+              <Button
+                onClick={() => setTool("brush")}
+                className={
+                  tool === "brush"
+                    ? "ring-2 ring-sky-500"
+                    : ""
+                }
+              >
                 🖌️
               </Button>
 
-              <Button onClick={() => setTool("rect")}>
+              <Button
+                onClick={() => setTool("rect")}
+                className={
+                  tool === "rect"
+                    ? "ring-2 ring-sky-500"
+                    : ""
+                }
+              >
                 ⬛️
               </Button>
 
-              <Button onClick={() => setTool("circle")}>
+              <Button
+                onClick={() => setTool("circle")}
+                className={
+                  tool === "circle"
+                    ? "ring-2 ring-sky-500"
+                    : ""
+                }
+              >
                 ⚫️
               </Button>
 
