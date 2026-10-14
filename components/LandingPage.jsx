@@ -155,7 +155,7 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
   const isStudent = mode === "student";
 
   const pageStyle = {
-    backgroundColor: isStudent ? "#75a690" : "#dfeed3",
+    backgroundColor: isStudent ? "#75a690" : "#c2d1b5",
     color: "#49444b",
     fontFamily: '"Glacial Indifference", Arial, Helvetica, sans-serif',
   };
