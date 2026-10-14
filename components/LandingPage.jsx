@@ -28,10 +28,6 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
   const [loading, setLoading] = useState(false);
   const [familySubmitted, setFamilySubmitted] = useState(false);
 
-  // --------------------------------------------------
-  // STUDENT
-  // --------------------------------------------------
-
   const handleStudentJoin = async () => {
     setError("");
 
@@ -62,10 +58,6 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
     }
   };
 
-  // --------------------------------------------------
-  // SCHOOL / TEACHER
-  // --------------------------------------------------
-
   const handleTeacherSignIn = async () => {
     setError("");
 
@@ -76,10 +68,7 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
     setLoading(true);
 
     try {
-      const cred = await teacherSignIn(
-        email.trim(),
-        password
-      );
+      const cred = await teacherSignIn(email.trim(), password);
 
       onTeacherLogin({
         teacherId: cred.user.uid,
@@ -94,18 +83,12 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
   const handleTeacherSignUp = async () => {
     setError("");
 
-    if (
-      !displayName.trim() ||
-      !email.trim() ||
-      !password
-    ) {
+    if (!displayName.trim() || !email.trim() || !password) {
       return setError("Please fill in all fields.");
     }
 
     if (password.length < 6) {
-      return setError(
-        "Password must be at least 6 characters."
-      );
+      return setError("Password must be at least 6 characters.");
     }
 
     setLoading(true);
@@ -122,22 +105,14 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
       });
     } catch (e) {
       if (e.code === "auth/email-already-in-use") {
-        setError(
-          "Email already registered. Sign in instead."
-        );
+        setError("Email already registered. Sign in instead.");
       } else {
-        setError(
-          "Could not create account. Please try again."
-        );
+        setError("Could not create account. Please try again.");
       }
     } finally {
       setLoading(false);
     }
   };
-
-  // --------------------------------------------------
-  // FAMILY CONSULTATION
-  // --------------------------------------------------
 
   const handleFamilySubmit = () => {
     setError("");
@@ -160,10 +135,6 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
     }, 500);
   };
 
-  // --------------------------------------------------
-  // FAMILY LOGIN
-  // --------------------------------------------------
-
   const handleFamilyLogin = () => {
     setError("");
 
@@ -181,38 +152,57 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
     );
   };
 
-  // --------------------------------------------------
-  // PAGE
-  // --------------------------------------------------
+  const isStudent = mode === "student";
+
+  const pageStyle = {
+    backgroundColor: isStudent ? "#85bba3" : "#dfeed3",
+    color: "#49444b",
+    fontFamily: '"Glacial Indifference", Arial, Helvetica, sans-serif',
+  };
+
+  const panelStyle = {
+    backgroundColor: isStudent ? "#85bba3" : "#dfeed3",
+    color: "#49444b",
+    borderColor: "#49444b33",
+  };
+
+  const mutedText = "text-[#49444b]/75";
+  const inputStyle =
+    "w-full border border-[#49444b]/25 bg-white/70 text-[#49444b] placeholder:text-[#49444b]/60 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#49444b]/20";
+
+  const primaryButton =
+    "w-full bg-[#49444b]/10 hover:bg-[#49444b]/15 text-[#49444b] py-3 rounded-2xl font-medium disabled:opacity-50 transition-all";
+
+  const tabActive =
+    "bg-[#49444b]/15 text-[#49444b] font-medium";
+
+  const tabInactive =
+    "text-[#49444b]/75 hover:bg-[#49444b]/5";
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4 bg-gray-50">
-
-      <div className="bg-white rounded-3xl shadow-sm border p-8 w-full max-w-md">
-
+    <div
+      className="flex items-center justify-center min-h-screen p-4"
+      style={pageStyle}
+    >
+      <div
+        className="rounded-3xl shadow-sm border p-8 w-full max-w-md"
+        style={panelStyle}
+      >
         {/* LOGO */}
-
         <div className="text-center mb-8">
-
-          <div className="text-5xl mb-3">
-            🌱
-          </div>
+          <div className="text-5xl mb-3">🌱</div>
 
           <h1 className="text-4xl font-semibold mb-1">
             Sprout
           </h1>
 
-          <p className="text-gray-500">
+          <p className={mutedText}>
             Connecting children with the world
           </p>
-
         </div>
 
-
         {/* MAIN ROLE TABS */}
-
         <div className="flex gap-2 mb-6">
-
           <button
             onClick={() => {
               setMode("family");
@@ -220,16 +210,13 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
             }}
             className={`flex-1 py-2 rounded-xl font-medium transition-all ${
               mode === "family"
-                ? "bg-emerald-200 text-emerald-900"
-                : "bg-gray-100 text-gray-600"
+                ? tabActive
+                : tabInactive
             }`}
           >
             👨‍👩‍👧
-            <div className="text-xs mt-1">
-              Family
-            </div>
+            <div className="text-xs mt-1">Family</div>
           </button>
-
 
           <button
             onClick={() => {
@@ -238,16 +225,13 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
             }}
             className={`flex-1 py-2 rounded-xl font-medium transition-all ${
               mode === "student"
-                ? "bg-sky-200 text-sky-900"
-                : "bg-gray-100 text-gray-600"
+                ? tabActive
+                : tabInactive
             }`}
           >
             🎒
-            <div className="text-xs mt-1">
-              Student
-            </div>
+            <div className="text-xs mt-1">Student</div>
           </button>
-
 
           <button
             onClick={() => {
@@ -256,42 +240,30 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
             }}
             className={`flex-1 py-2 rounded-xl font-medium transition-all ${
               mode === "teacher"
-                ? "bg-emerald-200 text-emerald-900"
-                : "bg-gray-100 text-gray-600"
+                ? tabActive
+                : tabInactive
             }`}
           >
             🏫
-            <div className="text-xs mt-1">
-              School
-            </div>
+            <div className="text-xs mt-1">School</div>
           </button>
-
         </div>
 
-
-        {/* ==================================================
-            FAMILY
-        ================================================== */}
-
+        {/* FAMILY */}
         {mode === "family" && (
-
           <div>
-
             <h2 className="text-2xl font-semibold mb-2">
               Sprout for Families
             </h2>
 
-            <p className="text-gray-500 text-sm leading-relaxed mb-6">
+            <p className={`${mutedText} text-sm leading-relaxed mb-6`}>
               Give your child the opportunity to connect,
               collaborate and make friends with children
               around the world.
             </p>
 
-
             {/* FAMILY LOGIN / GET STARTED TABS */}
-
             <div className="flex gap-2 mb-6">
-
               <button
                 onClick={() => {
                   setFamilyTab("login");
@@ -300,13 +272,12 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
                 }}
                 className={`flex-1 py-2 rounded-xl text-sm transition-all ${
                   familyTab === "login"
-                    ? "bg-emerald-100 text-emerald-900 font-medium"
-                    : "text-gray-500 hover:bg-gray-50"
+                    ? tabActive
+                    : tabInactive
                 }`}
               >
                 Log In
               </button>
-
 
               <button
                 onClick={() => {
@@ -316,70 +287,52 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
                 }}
                 className={`flex-1 py-2 rounded-xl text-sm transition-all ${
                   familyTab === "signup"
-                    ? "bg-emerald-100 text-emerald-900 font-medium"
-                    : "text-gray-500 hover:bg-gray-50"
+                    ? tabActive
+                    : tabInactive
                 }`}
               >
                 Get Started
               </button>
-
             </div>
 
-
-            {/* ----------------------------------------------
-                FAMILY LOGIN
-            ---------------------------------------------- */}
-
+            {/* FAMILY LOGIN */}
             {familyTab === "login" && (
-
               <div>
-
-                <p className="text-gray-500 text-sm leading-relaxed mb-5">
+                <p className={`${mutedText} text-sm leading-relaxed mb-5`}>
                   Already part of Sprout? Log in to manage
                   your child's profile, upcoming exchanges
                   and activities.
                 </p>
 
-
                 <div className="space-y-4">
-
                   <input
                     placeholder="Parent / guardian email"
                     type="email"
                     value={parentEmail}
-                    onChange={(e) =>
-                      setParentEmail(e.target.value)
-                    }
-                    className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-200"
+                    onChange={(e) => setParentEmail(e.target.value)}
+                    className={inputStyle}
                   />
-
 
                   <input
                     placeholder="Password"
                     type="password"
                     value={password}
-                    onChange={(e) =>
-                      setPassword(e.target.value)
-                    }
+                    onChange={(e) => setPassword(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         handleFamilyLogin();
                       }
                     }}
-                    className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-200"
+                    className={inputStyle}
                   />
-
 
                   <button
                     onClick={handleFamilyLogin}
                     disabled={loading}
-                    className="w-full bg-emerald-200 hover:bg-emerald-300 py-3 rounded-2xl font-medium disabled:opacity-50 transition-all"
+                    className={primaryButton}
                   >
-                    {loading
-                      ? "Logging in..."
-                      : "Log In"}
+                    {loading ? "Logging in..." : "Log In"}
                   </button>
-
 
                   <button
                     type="button"
@@ -387,275 +340,189 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
                       setFamilyTab("signup");
                       setError("");
                     }}
-                    className="w-full text-sm text-emerald-700 hover:text-emerald-900"
+                    className="w-full text-sm text-[#49444b] underline underline-offset-2"
                   >
                     New to Sprout? Get started →
                   </button>
-
                 </div>
-
               </div>
-
             )}
 
-
-            {/* ----------------------------------------------
-                FAMILY GET STARTED
-            ---------------------------------------------- */}
-
+            {/* FAMILY GET STARTED */}
             {familyTab === "signup" && (
-
               <div>
-
                 {!familySubmitted ? (
-
                   <>
-
                     <div className="space-y-4 mb-6">
-
                       <div className="flex gap-3">
-
-                        <div className="text-xl">
-                          🌏
-                        </div>
-
+                        <div className="text-xl">🌏</div>
                         <div>
                           <p className="font-medium">
                             Connect with the world
                           </p>
-
-                          <p className="text-sm text-gray-500">
+                          <p className={`${mutedText} text-sm`}>
                             Meet children from different
                             countries and cultures.
                           </p>
                         </div>
-
                       </div>
 
-
                       <div className="flex gap-3">
-
-                        <div className="text-xl">
-                          🤝
-                        </div>
-
+                        <div className="text-xl">🤝</div>
                         <div>
                           <p className="font-medium">
                             Learn together
                           </p>
-
-                          <p className="text-sm text-gray-500">
+                          <p className={`${mutedText} text-sm`}>
                             Work together through fun projects
                             and activities.
                           </p>
                         </div>
-
                       </div>
 
-
                       <div className="flex gap-3">
-
-                        <div className="text-xl">
-                          🔒
-                        </div>
-
+                        <div className="text-xl">🔒</div>
                         <div>
                           <p className="font-medium">
                             Designed with privacy in mind
                           </p>
-
-                          <p className="text-sm text-gray-500">
+                          <p className={`${mutedText} text-sm`}>
                             Sprout is designed as a controlled
                             environment rather than an open
                             social network.
                           </p>
                         </div>
-
                       </div>
-
                     </div>
 
-
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-6">
-
-                      <p className="font-medium text-emerald-900 mb-1">
+                    <div className="border border-[#49444b]/15 bg-white/35 rounded-2xl p-4 mb-6">
+                      <p className="font-medium mb-1">
                         🌱 Start with a free consultation
                       </p>
 
-                      <p className="text-sm text-emerald-800 leading-relaxed">
+                      <p className="text-sm leading-relaxed">
                         Before your child joins Sprout, a
                         member of the QT team will meet with
                         you and your child to understand their
                         interests, goals and learning needs.
                       </p>
-
                     </div>
 
-
                     <div className="space-y-4">
-
                       <input
                         placeholder="Parent / guardian name"
                         value={parentName}
-                        onChange={(e) =>
-                          setParentName(e.target.value)
-                        }
-                        className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-200"
+                        onChange={(e) => setParentName(e.target.value)}
+                        className={inputStyle}
                       />
-
 
                       <input
                         placeholder="Parent / guardian email"
                         type="email"
                         value={parentEmail}
-                        onChange={(e) =>
-                          setParentEmail(e.target.value)
-                        }
+                        onChange={(e) => setParentEmail(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             handleFamilySubmit();
                           }
                         }}
-                        className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-200"
+                        className={inputStyle}
                       />
-
 
                       <button
                         onClick={handleFamilySubmit}
                         disabled={loading}
-                        className="w-full bg-emerald-200 hover:bg-emerald-300 py-3 rounded-2xl font-medium disabled:opacity-50 transition-all"
+                        className={primaryButton}
                       >
                         {loading
                           ? "Submitting..."
                           : "Request Free Consultation"}
                       </button>
-
                     </div>
-
                   </>
-
                 ) : (
-
                   <div className="text-center py-6">
-
-                    <div className="text-5xl mb-4">
-                      🌱
-                    </div>
+                    <div className="text-5xl mb-4">🌱</div>
 
                     <h2 className="text-2xl font-semibold mb-3">
                       Thanks, {parentName}!
                     </h2>
 
-                    <p className="text-gray-500 leading-relaxed mb-6">
+                    <p className={`${mutedText} leading-relaxed mb-6`}>
                       We've received your request for a free
                       Sprout family consultation.
                     </p>
 
-
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-left">
-
-                      <p className="font-medium text-emerald-900 mb-2">
+                    <div className="border border-[#49444b]/15 bg-white/35 rounded-2xl p-4 text-left">
+                      <p className="font-medium mb-2">
                         What happens next?
                       </p>
 
-                      <p className="text-sm text-emerald-800 leading-relaxed">
+                      <p className="text-sm leading-relaxed">
                         A member of the QT team will get in
                         touch with you at the email address
                         you provided to arrange a convenient
                         time to meet with you and your child.
                       </p>
-
                     </div>
-
                   </div>
-
                 )}
-
               </div>
-
             )}
-
           </div>
-
         )}
 
-
-        {/* ==================================================
-            STUDENT
-        ================================================== */}
-
+        {/* STUDENT */}
         {mode === "student" && (
-
           <div className="space-y-4">
-
             <h2 className="text-2xl font-semibold mb-1">
               Join Classroom
             </h2>
 
-            <p className="text-gray-500 text-sm mb-5">
+            <p className={`${mutedText} text-sm mb-5`}>
               Enter the details provided by your teacher.
             </p>
-
 
             <input
               placeholder="Your name"
               value={name}
-              onChange={(e) =>
-                setName(e.target.value)
-              }
-              className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-sky-200"
+              onChange={(e) => setName(e.target.value)}
+              className={inputStyle}
             />
-
 
             <input
               placeholder="Room code (e.g. JP-NZ-01)"
               value={roomCode}
-              onChange={(e) =>
-                setRoomCode(e.target.value)
-              }
+              onChange={(e) => setRoomCode(e.target.value)}
               onKeyDown={(e) =>
-                e.key === "Enter" &&
-                handleStudentJoin()
+                e.key === "Enter" && handleStudentJoin()
               }
-              className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-sky-200"
+              className={inputStyle}
             />
-
 
             <button
               onClick={handleStudentJoin}
               disabled={loading}
-              className="w-full bg-sky-200 hover:bg-sky-300 py-3 rounded-2xl font-medium disabled:opacity-50 transition-all"
+              className={primaryButton}
             >
-              {loading
-                ? "Joining..."
-                : "Join Classroom"}
+              {loading ? "Joining..." : "Join Classroom"}
             </button>
-
           </div>
-
         )}
 
-
-        {/* ==================================================
-            SCHOOL / TEACHER
-        ================================================== */}
-
+        {/* SCHOOL / TEACHER */}
         {mode === "teacher" && (
-
           <div>
-
             <h2 className="text-2xl font-semibold mb-1">
               For Schools
             </h2>
 
-            <p className="text-gray-500 text-sm mb-5">
+            <p className={`${mutedText} text-sm mb-5`}>
               Manage your students and international
               collaboration rooms.
             </p>
 
-
             <div className="flex gap-2 mb-5">
-
               <button
                 onClick={() => {
                   setTeacherTab("signin");
@@ -663,13 +530,12 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
                 }}
                 className={`flex-1 py-2 rounded-xl text-sm transition-all ${
                   teacherTab === "signin"
-                    ? "bg-emerald-100 text-emerald-900 font-medium"
-                    : "text-gray-500 hover:bg-gray-50"
+                    ? tabActive
+                    : tabInactive
                 }`}
               >
                 Sign In
               </button>
-
 
               <button
                 onClick={() => {
@@ -678,61 +544,45 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
                 }}
                 className={`flex-1 py-2 rounded-xl text-sm transition-all ${
                   teacherTab === "signup"
-                    ? "bg-emerald-100 text-emerald-900 font-medium"
-                    : "text-gray-500 hover:bg-gray-50"
+                    ? tabActive
+                    : tabInactive
                 }`}
               >
                 Create Account
               </button>
-
             </div>
 
-
             <div className="space-y-4">
-
               {teacherTab === "signup" && (
-
                 <input
                   placeholder="Your name"
                   value={displayName}
-                  onChange={(e) =>
-                    setDisplayName(e.target.value)
-                  }
-                  className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-200"
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className={inputStyle}
                 />
-
               )}
-
 
               <input
                 placeholder="Email address"
                 type="email"
                 value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
-                className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-200"
+                onChange={(e) => setEmail(e.target.value)}
+                className={inputStyle}
               />
-
 
               <input
                 placeholder="Password"
                 type="password"
                 value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
+                onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) =>
                   e.key === "Enter" &&
-                  (
-                    teacherTab === "signin"
-                      ? handleTeacherSignIn()
-                      : handleTeacherSignUp()
-                  )
+                  (teacherTab === "signin"
+                    ? handleTeacherSignIn()
+                    : handleTeacherSignUp())
                 }
-                className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-emerald-200"
+                className={inputStyle}
               />
-
 
               <button
                 onClick={
@@ -741,7 +591,7 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
                     : handleTeacherSignUp
                 }
                 disabled={loading}
-                className="w-full bg-emerald-200 hover:bg-emerald-300 py-3 rounded-2xl font-medium disabled:opacity-50 transition-all"
+                className={primaryButton}
               >
                 {loading
                   ? "..."
@@ -749,26 +599,17 @@ export default function LandingPage({ onStudentJoin, onTeacherLogin }) {
                   ? "Enter Dashboard"
                   : "Create Account"}
               </button>
-
             </div>
-
           </div>
-
         )}
-
 
         {/* ERROR */}
-
         {error && (
-
-          <div className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2">
+          <div className="mt-4 text-sm text-[#49444b] bg-white/60 border border-[#49444b]/25 rounded-xl px-4 py-2">
             {error}
           </div>
-
         )}
-
       </div>
-
     </div>
   );
 }
