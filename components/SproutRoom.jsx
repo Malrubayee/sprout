@@ -614,7 +614,7 @@ export default function SproutRoom({ roomCode, userData, leaveRoom }) {
   );
 
   return (
-    <div className="min-h-[100dvh] bg-gray-100 p-2 sm:p-4 safe-area-x safe-area-bottom">
+    <div className="min-h-[100dvh] bg-gray-100 p-2 sm:p-4 safe-area-x safe-area-bottom background-color:#c2d1b5">
 
       {/* HEADER */}
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
